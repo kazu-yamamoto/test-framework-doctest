@@ -51,8 +51,6 @@ noColors =  mempty {
 --
 -- You only need to give paths to modules that are not imported from any other module
 
-xxx rootPaths opts = DocTest.getDocTests opts rootPaths
-
 docTest :: [FilePath] -- ^ Paths to root modules
         -> [String] -- ^ Options passed to ghci
         -> IO Test
