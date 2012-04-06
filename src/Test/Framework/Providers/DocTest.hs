@@ -54,10 +54,10 @@ noColors =  mempty {
 docTest :: [FilePath] -- ^ Paths to root modules
         -> [String] -- ^ Options passed to ghci
         -> IO Test
-docTest rootPaths opts = toTestFrameworkGroup opts <$> getModuleExamples
+docTest rootPaths options = toTestFrameworkGroup opts <$> getModuleExamples
   where
-    options = rootPaths ++ opts
-    getModuleExamples = DocTest.getDocTests opts rootPaths
+    opts = options ++ rootPaths
+    getModuleExamples = DocTest.getDocTests options rootPaths
 
 toTestFrameworkGroup :: [String] -> [Module Example] -> Test
 toTestFrameworkGroup opts mdls = testGroup "DocTest" tests
