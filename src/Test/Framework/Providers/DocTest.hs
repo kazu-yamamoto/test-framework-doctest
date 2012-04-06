@@ -32,13 +32,15 @@ The @*** Exception: ExitFailure 1@ is caused by
 
 -}
 
-module Test.Framework.Providers.DocTest (docTest) where
+module Test.Framework.Providers.DocTest (docTest, xxx) where
 
+import Control.Applicative
+import Data.List(groupBy)
+import Data.Monoid
+import Test.DocTest (Example, Module(..), Interaction(..))
 import qualified Test.DocTest as DocTest
 import Test.Framework
 import Test.Framework.Providers.HUnit
-import Data.List(groupBy)
-import Data.Monoid
 
 noColors :: RunnerOptions
 noColors =  mempty {
@@ -49,22 +51,31 @@ noColors =  mempty {
 --
 -- You only need to give paths to modules that are not imported from any other module
 
-docTest::[FilePath] -- ^ Paths to root modules
-         -> [String] -- ^ Options passed to ghci
-         -> IO Test
-docTest rootPaths options = do
-  tests <- DocTest.getDocTests options rootPaths
-  return $ toTestFrameworkGroup (rootPaths ++ options) tests
+xxx rootPaths opts = DocTest.getDocTests opts rootPaths
 
-toTestFrameworkTest :: [String] -> DocTest.DocTest -> Test
-toTestFrameworkTest options test = testCase testName $ DocTest.withInterpreter options $ flip DocTest.toAssertion test
+docTest :: [FilePath] -- ^ Paths to root modules
+        -> [String] -- ^ Options passed to ghci
+        -> IO Test
+docTest rootPaths opts = toTestFrameworkGroup opts <$> getModuleExamples
   where
-    testName = DocTest.firstExpression test
+    options = rootPaths ++ opts
+    getModuleExamples = DocTest.getDocTests opts rootPaths
 
-toTestFrameworkGroup :: [String] -> [DocTest.DocTest] -> Test
-toTestFrameworkGroup options examples = testGroup "DocTest" $ map fileTestGroup $ groupBy w examples
+toTestFrameworkGroup :: [String] -> [Module Example] -> Test
+toTestFrameworkGroup opts mdls = testGroup "DocTest" tests
   where
-    w left right = DocTest.sourcePath left == DocTest.sourcePath right
-    fileTestGroup examples = testGroup fileName $ toTestFrameworkTest options `map` examples
-      where
-        fileName = DocTest.sourcePath $ head $ examples
+    tests = map (toModuleTestGroup opts) mdls
+    
+toModuleTestGroup :: [String] -> Module Example -> Test
+toModuleTestGroup opts mdl = testGroup mdlName tests
+  where
+    mdlName = moduleName mdl
+    examples = moduleContent mdl
+    tests = map (toTestFrameworkTest opts mdlName) examples
+
+toTestFrameworkTest :: [String] -> String -> Example -> Test
+toTestFrameworkTest opts mdlName example =
+    testCase testName . DocTest.withInterpreter opts $ \iptr -> 
+      DocTest.toAssertion iptr mdlName example
+  where
+    testName = expression . head . DocTest.exampleToInteractions $ example
