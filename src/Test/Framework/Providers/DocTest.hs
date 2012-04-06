@@ -32,7 +32,7 @@ The @*** Exception: ExitFailure 1@ is caused by
 
 -}
 
-module Test.Framework.Providers.DocTest (docTest, xxx) where
+module Test.Framework.Providers.DocTest (docTest) where
 
 import Control.Applicative
 import Data.List(groupBy)
